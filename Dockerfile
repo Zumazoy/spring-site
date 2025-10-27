@@ -1,16 +1,16 @@
-FROM maven:3.9.6-openjdk-23 AS builder
+FROM openjdk:23-jdk-jammy AS builder
 
 WORKDIR /app
 
 COPY pom.xml .
-COPY src ./src
+COPY src /app/src
 
 RUN mvn clean package -DskipTests
 
-FROM openjdk:23-jdk-slim
-
-COPY --from=builder /app/target/*.jar app.jar
+FROM openjdk:23-jre-jammy
 
 EXPOSE 2025
 
-CMD ["java", "-jar", "app.jar"]
+COPY --from=builder /app/target/*.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
