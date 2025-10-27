@@ -1,8 +1,4 @@
-FROM maven:3-openjdk-23 AS builder
-
-RUN app-get update && \
-    app-get install -y maven && \
-    rm -rf /var/lib/apt/lists/*
+FROM maven:3.9.6-openjdk-23 AS builder
 
 WORKDIR /app
 
@@ -11,7 +7,7 @@ COPY src ./src
 
 RUN mvn clean package -DskipTests
 
-FROM openjdk:23-slim
+FROM openjdk:23-jdk-slim
 
 COPY --from=builder /app/target/*.jar app.jar
 
