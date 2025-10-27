@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Управление маршрутами</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="errorNotification" class="error-notification"
+     th:if="${validationErrors != null and not validationErrors.isEmpty()}">
+  <span class="close-btn" onclick="closeErrorNotification()">×</span>
+  <strong>Ошибки при добавлении:</strong>
+  <ul id="errorList" class="error-list">
+    <li th:each="error : ${validationErrors}" th:text="${error.value}"></li>
+  </ul>
+</div>
+<div id="updateErrorNotification" class="error-notification"
+     th:if="${updateValidationErrors != null and not updateValidationErrors.isEmpty()}">
+  <span class="close-btn" onclick="closeUpdateErrorNotification()">×</span>
+  <strong>Ошибки при обновлении:</strong>
+  <ul id="updateErrorList" class="error-list">
+    <li th:each="error : ${updateValidationErrors}" th:text="${error.value}"></li>
+  </ul>
+</div>
+
+<header>
+  <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="/admin" class="admin-btn">← Админ меню</a>
+    <h1>Управление маршрутами</h1>
+    <div style="width: 100px;"></div>
+  </div>
+</header>
+
+<div class="container">
+  <section class="search-section">
+    <h2>Поиск маршрутов</h2>
+    <form class="search-form" action="/admin/routes/search" method="get">
+      <input type="text" maxlength="100" name="keyword" placeholder="Введите ключевое слово" th:value="${keyword}" required>
+      <select name="searchBy">
+        <option value="id" th:selected="${searchBy == 'id'}">ID</option>
+        <option value="startStation" th:selected="${searchBy == 'startStation'}">Начальная станция</option>
+        <option value="endStation" th:selected="${searchBy == 'endStation'}">Конечная станция</option>
+      </select>
+      <button type="submit">Поиск</button>
+      <a href="/admin/routes">
+        <button type="button">Сбросить поиск</button>
+      </a>
+    </form>
+  </section>
+
+  <section>
+    <h2>Добавить маршрут</h2>
+    <form action="/admin/routes/add" method="post" th:object="${route}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Начальная станция</label>
+          <input type="text" maxlength="50" th:field="*{startStation}" required>
+        </div>
+        <div class="form-group">
+          <label>Конечная станция</label>
+          <input type="text" maxlength="50" th:field="*{endStation}" required>
+        </div>
+        <div class="form-group">
+          <label>Расстояние (км)</label>
+          <input type="number" min="1" max="1000000" th:field="*{distance}" required>
+        </div>
+        <div class="form-group">
+          <label>Время в пути (минуты)</label>
+          <input type="time" min="1" max="2880" th:field="*{travelTime}" required>
+        </div>
+      </div>
+      <button type="submit">Добавить маршрут</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Список маршрутов</h2>
+    <ol>
+      <th:block th:each="route : ${routes}">
+        <li>
+          <div class="user-info">
+            <span th:text="'ID: ' + ${route.id} + ' |'"></span>
+            <span th:text="'Начальная станция: ' + ${route.startStation} + ' |'"></span>
+            <span th:text="'Конечная станция: ' + ${route.endStation} + ' |'"></span>
+            <span th:text="'Расстояние: ' + ${route.distance} + ' км |'"></span>
+            <span th:text="'Время в пути: ' + ${route.travelTime}"></span>
+          </div>
+          <form id="update-form-${route.id}" action="/admin/routes/update" method="post">
+            <input type="hidden" name="currentPage" th:value="${currentPage}">
+            <input type="hidden" name="id" th:value="${route.id}"/>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Начальная станция</label>
+                <input type="text" maxlength="50" name="startStation" placeholder="Новая начальная станция"
+                       th:attr="data-routeid=${route.id}" th:value="${route.startStation}">
+              </div>
+              <div class="form-group">
+                <label>Конечная станция</label>
+                <input type="text" maxlength="50" name="endStation" placeholder="Новая конечная станция"
+                       th:attr="data-routeid=${route.id}" th:value="${route.endStation}">
+              </div>
+              <div class="form-group">
+                <label>Расстояние (км)</label>
+                <input type="number" min="1" max="1000000" name="distance" placeholder="Новое расстояние"
+                       th:attr="data-routeid=${route.id}" th:value="${route.distance}">
+              </div>
+              <div class="form-group">
+                <label>Время в пути (минуты)</label>
+                <input type="time" min="1" max="2880" name="travelTime" placeholder="Новое время в пути"
+                       th:attr="data-routeid=${route.id}" th:value="${route.travelTime}">
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button type="submit">Обновить</button>
+              <button type="button" th:onclick="'confirmDelete(' + ${route.id} + ')'" class="btn-danger">Удалить</button>
+            </div>
+          </form>
+          <form th:id="'delete-form-' + ${route.id}" action="/admin/routes/delete" method="post" style="display: none;">
+            <input type="hidden" name="id" th:value="${route.id}"/>
+          </form>
+        </li>
+      </th:block>
+    </ol>
+
+    <div class="pagination" th:if="${totalPages > 1}">
+      <!-- Назад -->
+      <a th:if="${currentPage > 0}"
+         th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/routes/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage - 1) :
+                 '/admin/routes?page=' + (currentPage - 1)}">← Назад</a>
+
+      <!-- Номера страниц -->
+      <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:if="${i != currentPage}" class="pages"
+                   th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                             '/admin/routes/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + i :
+                             '/admin/routes?page=' + i}"
+                   th:text="${i + 1}"></a>
+                <span class="currentPage" th:if="${i == currentPage}" th:text="${i + 1}"></span>
+            </span>
+
+      <!-- Вперед -->
+      <a th:if="${currentPage < totalPages - 1}"
+         th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/routes/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage + 1) :
+                 '/admin/routes?page=' + (currentPage + 1)}">Вперед →</a>
+    </div>
+  </section>
+</div>
+</body>
+<script th:inline="javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    const errors = /*[[${validationErrors}]]*/ {};
+    if (errors && Object.keys(errors).length > 0) {
+      highlightAddErrorFields(errors);
+      showErrorNotification(errors);
+    }
+
+    const updateErrors = /*[[${updateValidationErrors}]]*/ {};
+    if (updateErrors && Object.keys(updateErrors).length > 0) {
+      highlightUpdateErrorFields(updateErrors);
+      showUpdateErrorNotification(updateErrors);
+    }
+  });
+
+  function highlightAddErrorFields(errors) {
+    document.querySelectorAll('.add-error-field').forEach(el => {
+      el.classList.remove('add-error-field');
+    });
+
+    for (const field in errors) {
+      const input = document.querySelector(`form[action='/admin/routes/add'] [name="${field}"],
+                                              form[action='/admin/routes/add'] [th\\:field="*{${field}}"]`);
+      if (input) {
+        input.classList.add('add-error-field');
+        if (Object.keys(errors).indexOf(field) === 0) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }
+
+  function highlightUpdateErrorFields(errors) {
+    document.querySelectorAll('.update-error-field').forEach(el => {
+      el.classList.remove('update-error-field');
+    });
+
+    for (const field in errors) {
+      const parts = field.split('_');
+      if (parts.length >= 3 && parts[0] === "update") {
+        const fieldName = parts[1];
+        const routeId = parts[2];
+
+        const input = document.querySelector(`input[name="${fieldName}"][data-routeid="${routeId}"]`);
+        if (input) {
+          input.classList.add('update-error-field');
+          if (Object.keys(errors).indexOf(field) === 0) {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
+    }
+  }
+</script>
+</html>

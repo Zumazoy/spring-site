@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление билетами</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="errorNotification" class="error-notification"
+     th:if="${validationErrors != null and not validationErrors.isEmpty()}">
+    <span class="close-btn" onclick="closeErrorNotification()">×</span>
+    <strong>Ошибки при добавлении:</strong>
+    <ul id="errorList" class="error-list">
+        <li th:each="error : ${validationErrors}" th:text="${error.value}"></li>
+    </ul>
+</div>
+<div id="updateErrorNotification" class="error-notification"
+     th:if="${updateValidationErrors != null and not updateValidationErrors.isEmpty()}">
+    <span class="close-btn" onclick="closeUpdateErrorNotification()">×</span>
+    <strong>Ошибки при обновлении:</strong>
+    <ul id="updateErrorList" class="error-list">
+        <li th:each="error : ${updateValidationErrors}" th:text="${error.value}"></li>
+    </ul>
+</div>
+
+<header>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="/admin" class="admin-btn">← Админ меню</a>
+        <h1>Управление билетами</h1>
+        <div style="width: 100px;"></div>
+    </div>
+</header>
+
+<div class="container">
+    <section class="search-section">
+        <h2>Поиск билетов</h2>
+        <form class="search-form" action="/admin/tickets/search" method="get">
+            <input type="text" maxlength="100" name="keyword" placeholder="Введите ключевое слово" th:value="${keyword}" required>
+            <select name="searchBy">
+                <option value="id" th:selected="${searchBy == 'id'}">ID</option>
+            </select>
+            <button type="submit">Поиск</button>
+            <a href="/admin/tickets">
+                <button type="button">Сбросить поиск</button>
+            </a>
+        </form>
+    </section>
+
+    <section>
+        <h2>Добавить билет</h2>
+        <form action="/admin/tickets/add" method="post" th:object="${ticket}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Расписание</label>
+                    <select th:field="*{schedule}" class="form-control">
+                        <option value="" disabled selected>Выберите расписание</option>
+                        <option th:each="schedule : ${schedules}"
+                                th:value="${schedule.id}"
+                                th:text="${schedule.getTime() + ' (ID: ' + schedule.id + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Пользователь</label>
+                    <select th:field="*{user}" class="form-control">
+                        <option value="" disabled selected>Выберите пользователя</option>
+                        <option th:each="user : ${users}"
+                                th:value="${user.id}"
+                                th:text="${user.login + ' (ID: ' + user.id + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Статус билета</label>
+                    <select th:field="*{ticketStatus}" class="form-control">
+                        <option value="" disabled selected>Выберите статус билета</option>
+                        <option th:each="ticketStatus : ${ticketStatuses}"
+                                th:value="${ticketStatus.ticketStatusId}"
+                                th:text="${ticketStatus.ticketStatusTitle + ' (ID: ' + ticketStatus.ticketStatusId + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Номер вагона</label>
+                    <input type="number" min="1" max="100" name="carriageNumber" th:field="*{carriageNumber}" required>
+                </div>
+                <div class="form-group">
+                    <label>Номер места</label>
+                    <input type="number" min="1" max="10000" name="seatNumber" th:field="*{seatNumber}" required>
+                </div>
+                <div class="form-group">
+                    <label>Цена</label>
+                    <input type="number" min="0.01" step="0.01" name="price" th:field="*{price}" required>
+                </div>
+            </div>
+            <button type="submit">Добавить билет</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Список билетов</h2>
+        <ol>
+            <th:block th:each="ticket : ${tickets}">
+                <li>
+                    <div class="user-info">
+                        <span th:text="'ID: ' + ${ticket.id} + ' |'"></span>
+                        <span th:text="'Расписание: ' + ${ticket.schedule.getTime()} + ' |'"></span>
+                        <span th:text="'Пользователь: ' + ${ticket.user.login} + ' |'"></span>
+                        <span th:text="'Статус: ' + ${ticket.ticketStatus.ticketStatusTitle} + ' |'"></span>
+                        <span th:text="'Вагон: ' + ${ticket.carriageNumber} + ' |'"></span>
+                        <span th:text="'Место: ' + ${ticket.seatNumber} + ' |'"></span>
+                        <span th:text="'Цена: ' + ${ticket.price}"></span>
+                    </div>
+                    <form id="update-form-${ticket.id}" action="/admin/tickets/update" method="post">
+                        <input type="hidden" name="currentPage" th:value="${currentPage}">
+                        <input type="hidden" name="id" th:value="${ticket.id}"/>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Расписание</label>
+                                <select name="schedule.id" class="form-control">
+                                    <option value="" disabled selected>Новый расписание</option>
+                                    <option th:each="schedule : ${schedules}"
+                                            th:value="${schedule.id}"
+                                            th:selected="${schedule.id == ticket.schedule.id}"
+                                            th:text="${schedule.getTime() + ' (ID: ' + schedule.id + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Пользователь</label>
+                                <select name="user.id" class="form-control">
+                                    <option value="" disabled selected>Новый пользователь</option>
+                                    <option th:each="user : ${users}"
+                                            th:value="${user.id}"
+                                            th:selected="${user.id == ticket.user.id}"
+                                            th:text="${user.login + ' (ID: ' + user.id + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Статус билета</label>
+                                <select name="ticketStatus.ticketStatusId" class="form-control">
+                                    <option value="" disabled selected>Новый статус билета</option>
+                                    <option th:each="ticketStatus : ${ticketStatuses}"
+                                            th:value="${ticketStatus.ticketStatusId}"
+                                            th:selected="${ticketStatus.ticketStatusId == ticket.ticketStatus.ticketStatusId}"
+                                            th:text="${ticketStatus.ticketStatusTitle + ' (ID: ' + ticketStatus.ticketStatusId + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Номер вагона</label>
+                                <input type="number" min="1" max="100" name="carriageNumber"
+                                       th:attr="data-ticketid=${ticket.id}" th:value="${ticket.carriageNumber}">
+                            </div>
+                            <div class="form-group">
+                                <label>Номер места</label>
+                                <input type="number" min="1" max="10000" name="seatNumber"
+                                       th:attr="data-ticketid=${ticket.id}" th:value="${ticket.seatNumber}">
+                            </div>
+                            <div class="form-group">
+                                <label>Цена</label>
+                                <input type="number" min="0.01" step="0.01" name="price"
+                                       th:attr="data-ticketid=${ticket.id}" th:value="${ticket.price}">
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="submit">Обновить</button>
+                            <button type="button" th:onclick="'confirmDelete(' + ${ticket.id} + ')'" class="btn-danger">Удалить</button>
+                        </div>
+                    </form>
+                    <form th:id="'delete-form-' + ${ticket.id}" action="/admin/tickets/delete" method="post" style="display: none;">
+                        <input type="hidden" name="id" th:value="${ticket.id}"/>
+                    </form>
+                </li>
+            </th:block>
+        </ol>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <!-- Назад -->
+            <a th:if="${currentPage > 0}"
+               th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/tickets/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage - 1) :
+                 '/admin/tickets?page=' + (currentPage - 1)}">← Назад</a>
+
+            <!-- Номера страниц -->
+            <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:if="${i != currentPage}" class="pages"
+                   th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                             '/admin/tickets/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + i :
+                             '/admin/tickets?page=' + i}"
+                   th:text="${i + 1}"></a>
+                <span class="currentPage" th:if="${i == currentPage}" th:text="${i + 1}"></span>
+            </span>
+
+            <!-- Вперед -->
+            <a th:if="${currentPage < totalPages - 1}"
+               th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/tickets/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage + 1) :
+                 '/admin/tickets?page=' + (currentPage + 1)}">Вперед →</a>
+        </div>
+    </section>
+</div>
+</body>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const errors = /*[[${validationErrors}]]*/ {};
+        if (errors && Object.keys(errors).length > 0) {
+            highlightAddErrorFields(errors);
+            showErrorNotification(errors);
+        }
+
+        const updateErrors = /*[[${updateValidationErrors}]]*/ {};
+        if (updateErrors && Object.keys(updateErrors).length > 0) {
+            highlightUpdateErrorFields(updateErrors);
+            showUpdateErrorNotification(updateErrors);
+        }
+    });
+
+    function highlightAddErrorFields(errors) {
+        document.querySelectorAll('.add-error-field').forEach(el => {
+            el.classList.remove('add-error-field');
+        });
+
+        for (const field in errors) {
+            const input = document.querySelector(`form[action='/admin/tickets/add'] [name="${field}"],
+                                              form[action='/admin/tickets/add'] [th\\:field="*{${field}}"]`);
+            if (input) {
+                input.classList.add('add-error-field');
+                if (Object.keys(errors).indexOf(field) === 0) {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    }
+
+    function highlightUpdateErrorFields(errors) {
+        document.querySelectorAll('.update-error-field').forEach(el => {
+            el.classList.remove('update-error-field');
+        });
+
+        for (const field in errors) {
+            const parts = field.split('_');
+            if (parts.length >= 3 && parts[0] === "update") {
+                const fieldName = parts[1];
+                const ticketId = parts[2];
+
+                const input = document.querySelector(`input[name="${fieldName}"][data-ticketid="${ticketId}"]`);
+                if (input) {
+                    input.classList.add('update-error-field');
+                    if (Object.keys(errors).indexOf(field) === 0) {
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        }
+    }
+</script>
+</html>

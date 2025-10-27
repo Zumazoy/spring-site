@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/style.css">
+    <script src="/script.js" defer></script>
+    <title>CheepTrack</title>
+</head>
+
+<body>
+<div id="auth-info"
+     th:attr="data-is-authenticated=${isAuthenticated},
+              data-is-admin=${isAdmin},
+              data-login=${login}"
+     style="display: none;"></div>
+<header>
+    <div class="header-container">
+        <div class="header-left">
+            <div th:if="${isAdmin}">
+                <a href="/admin" class="admin-btn">Админ меню</a>
+            </div>
+        </div>
+
+        <h1 class="header-center">CheepTrack</h1>
+
+        <div class="header-right">
+            <div class="auth-buttons">
+                <div th:unless="${isAuthenticated}">
+                    <a href="/login" class="login-btn">Войти</a>
+                </div>
+                <div th:if="${isAuthenticated}" class="user-info-home">
+                    <span class="user-login"><span th:text="${login}"></span>👤</span>
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="logout-btn">Выйти</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <section class="header sec-home">
+        <div class="container">
+            <h1>CheepTrack - дешевые билеты на поезда</h1>
+            <p>Путешествуйте с комфортом по лучшим ценам!</p>
+        </div>
+    </section>
+
+    <section class="about sec-home">
+        <div class="container">
+            <h2>Почему выбирают нас?</h2>
+
+            <div class="features">
+                <div class="feature">
+                    <h3>Низкие цены</h3>
+                    <p>Мы предлагаем самые выгодные цены на билеты по всей стране. Сравните наши тарифы и убедитесь сами!</p>
+                </div>
+
+                <div class="feature">
+                    <h3>Удобство</h3>
+                    <p>Быстрое бронирование и оплата онлайн. Всего несколько кликов — и ваш билет готов!</p>
+                </div>
+
+                <div class="feature">
+                    <h3>Поддержка 24/7</h3>
+                    <p>Наша служба поддержки всегда готова помочь вам с любыми вопросами.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="popular-routes sec-home">
+        <div class="container">
+            <h2>Популярные направления</h2>
+            <p>Откройте для себя самые популярные маршруты, которые выбирают наши клиенты:</p>
+
+            <div class="routes">
+                <div class="route">
+                    <h3>Москва — Санкт-Петербург</h3>
+                    <p>Комфортные поезда, отправляющиеся несколько раз в день. Время в пути — всего 5 часов!</p>
+                </div>
+
+                <div class="route">
+                    <h3>Казань — Екатеринбург</h3>
+                    <p>Удобное расписание и доступные цены. Путешествуйте с удовольствием!</p>
+                </div>
+
+                <div class="route">
+                    <h3>Новосибирск — Красноярск</h3>
+                    <p>Наслаждайтесь видами Сибири из окна поезда. Лучшие условия для вашего комфорта.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="reviews sec-home">
+        <div class="container">
+            <h2>Отзывы наших клиентов</h2>
+            <p>Узнайте, что говорят о нас те, кто уже воспользовался нашими услугами:</p>
+
+            <div class="review-list">
+                <div class="review">
+                    <p>"Отличный сервис! Билеты купил за пару минут, цены действительно низкие. Рекомендую!"</p>
+                    <span>— Иван Петров</span>
+                </div>
+
+                <div class="review">
+                    <p>"Очень удобно, что можно забронировать билет онлайн. Поддержка помогла с выбором маршрута."</p>
+                    <span>— Анна Смирнова</span>
+                </div>
+
+                <div class="review">
+                    <p>"Поездка прошла отлично, спасибо за комфорт и доступные цены!"</p>
+                    <span>— Дмитрий Иванов</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="upfoot sec-home">
+        <div class="container">
+            <h2>Начните свое путешествие уже сегодня!</h2>
+            <p>Не упустите возможность сэкономить на поездках. Найдите лучшие предложения прямо сейчас!</p>
+            <a href="#" class="btn">Найти билеты</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Дешевые билеты на поезда. Все права защищены.</p>
+            <p>Свяжитесь с нами: <a href="mailto:info@cheaptickets.ru">info@cheaptickets.ru</a> | Телефон: +7 (999) 123-45-67</p>
+        </div>
+    </footer>
+
+<div th:if="${isAuthenticated}">
+    <div id="secret-admin-button" style="position: fixed; bottom: 20px; right: 20px; display: none;">
+        <form th:action="@{/secret-btn-adm-add}" method="get">
+            <button type="submit" style="background-color: #ff0000; color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;"
+                    title="Получить роль ADMIN">👑</button>
+        </form>
+    </div>
+</div>
+<div th:if="${isAuthenticated}">
+    <div id="secret-schedule-button" style="position: fixed; bottom: 20px; left: 20px; display: none;">
+        <form th:action="@{/secret-btn-sch-add}" method="get">
+            <button type="submit" style="background-color: #ff9100; color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;"
+                    title="Получить роль SCHEDULE">👑</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

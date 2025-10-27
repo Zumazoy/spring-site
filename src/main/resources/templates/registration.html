@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/style.css">
+  <title>CheepTrack | Регистрация</title>
+  <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="errorNotification" class="error-notification"
+     th:if="${validationErrors != null and not validationErrors.isEmpty()}"
+     style="display: block;">
+  <span class="close-btn" onclick="closeErrorNotification()">×</span>
+  <strong>Ошибки регистрации:</strong>
+  <ul id="errorList" class="error-list">
+    <li th:each="error : ${validationErrors}" th:text="${error.value}"></li>
+  </ul>
+</div>
+
+<header class="header-a">
+  <div class="container" style="display: flex; justify-content: center; align-items: center; position: relative;">
+    <a href="/">CheepTrack</a>
+  </div>
+</header>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <h2 class="auth-title">Регистрация</h2>
+
+    <form th:action="@{/registration}" method="post" class="auth-form registration-form" th:object="${user}">
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label for="name">Имя</label>
+          <input type="text" id="name" name="name" minlength="2" maxlength="30" th:field="*{name}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="surname">Фамилия</label>
+          <input type="text" id="surname" name="surname" minlength="2" maxlength="30" th:field="*{surname}" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="middleName">Отчество (необязательно)</label>
+        <input type="text" id="middleName" name="middleName" th:field="*{middleName}" maxlength="30">
+      </div>
+
+      <div class="form-group">
+        <label for="login">Логин</label>
+        <input type="text" id="login" name="login" minlength="5" maxlength="30" th:field="*{login}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" minlength="6" maxlength="40" th:field="*{password}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email (необязательно)</label>
+        <input type="email" id="email" name="email" maxlength="70" th:field="*{email}">
+      </div>
+
+      <div class="form-group">
+        <label for="phoneNumber">Телефон</label>
+        <input type="tel" id="phoneNumber" name="phoneNumber" maxlength="11" pattern="[8]{1}[0-9]{10}"
+               placeholder="81234567890" th:field="*{phoneNumber}" required>
+      </div>
+
+      <button type="submit" class="auth-btn">Зарегистрироваться</button>
+    </form>
+
+    <div class="auth-links">Уже есть аккаунт? <a href="/login">Войти</a></div>
+  </div>
+</div>
+</body>
+</html>

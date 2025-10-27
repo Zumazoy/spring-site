@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление пользователями</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="errorNotification" class="error-notification"
+     th:if="${validationErrors != null and not validationErrors.isEmpty()}">
+    <span class="close-btn" onclick="closeErrorNotification()">×</span>
+    <strong>Ошибки при добавлении:</strong>
+    <ul id="errorList" class="error-list">
+        <li th:each="error : ${validationErrors}" th:text="${error.value}"></li>
+    </ul>
+</div>
+<div id="updateErrorNotification" class="error-notification"
+     th:if="${updateValidationErrors != null and not updateValidationErrors.isEmpty()}">
+    <span class="close-btn" onclick="closeUpdateErrorNotification()">×</span>
+    <strong>Ошибки при обновлении:</strong>
+    <ul id="updateErrorList" class="error-list">
+        <li th:each="error : ${updateValidationErrors}" th:text="${error.value}"></li>
+    </ul>
+</div>
+
+<header>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="/admin" class="admin-btn">← Админ меню</a>
+        <h1>Управление пользователями</h1>
+        <div style="width: 100px;"></div>
+    </div>
+</header>
+
+<div class="container">
+    <section class="search-section">
+        <h2>Поиск пользователей</h2>
+        <form class="search-form" action="/admin/users/search" method="get">
+            <input type="text" maxlength="100" name="keyword" placeholder="Введите ключевое слово" th:value="${keyword}" required>
+            <select name="searchBy">
+                <option value="id" th:selected="${searchBy == 'id'}">ID</option>
+                <option value="name" th:selected="${searchBy == 'name'}">Имя</option>
+                <option value="email" th:selected="${searchBy == 'email'}">Почта</option>
+            </select>
+            <button type="submit">Поиск</button>
+            <a href="/admin/users">
+                <button type="button">Сбросить поиск</button>
+            </a>
+        </form>
+    </section>
+
+    <section>
+        <h2>Добавить пользователя</h2>
+        <form action="/admin/users/add" method="post" th:object="${user}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Имя</label>
+                    <input type="text" minlength="2" maxlength="100" th:field="*{name}" required>
+                </div>
+                <div class="form-group">
+                    <label>Фамилия</label>
+                    <input type="text" minlength="2" maxlength="100" th:field="*{surname}" required>
+                </div>
+                <div class="form-group">
+                    <label>Отчество</label>
+                    <input type="text" maxlength="100" th:field="*{middleName}">
+                </div>
+            </div>
+            <div class="form-grid form-grid-4">
+                <div class="form-group">
+                    <label>Логин</label>
+                    <input type="text" minlength="5" maxlength="100" th:field="*{login}" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" minlength="6" maxlength="100" th:field="*{password}" required>
+                </div>
+                <div class="form-group">
+                    <label>Почта</label>
+                    <input type="email" maxlength="100" th:field="*{email}">
+                </div>
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="tel" maxlength="11" pattern="[8]{1}[0-9]{10}" th:field="*{phoneNumber}">
+                </div>
+            </div>
+            <div class="form-grid-roles">
+                <div class="form-group">
+                    <label>Паспорт</label>
+                    <select th:field="*{passport}" class="form-control">
+                        <option th:value="${null}">Выберите паспорт</option>
+                        <option th:each="passport : ${passports}"
+                                th:value="${passport.id}"
+                                th:text="${passport.serial_number() + ' (ID: ' + passport.id + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group grid-role">
+                    <label>Роли</label>
+                    <div class="roles-checkbox-group">
+                        <th:block th:each="role : ${roles}">
+                            <label class="role-checkbox">
+                                <input type="checkbox" th:id="${'add-role-' + role}"
+                                       th:name="roles" th:value="${role}"
+                                       th:checked="${user?.roles != null and #lists.contains(user.roles, role)}">
+                                <span th:text="${role}"></span>
+                            </label>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+            <button type="submit">Добавить пользователя</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Список пользователей</h2>
+        <ol>
+            <th:block th:each="user : ${users}">
+                <li>
+                    <div class="user-info">
+                        <span th:text="${user.name} + ' ' + ${user.surname} + ' ' + ${user.middleName} + ' |'"></span>
+                        <span th:text="'Логин: ' + ${user.login} + ' |'"></span>
+                        <span th:text="'Почта: ' + ${user.email} + ' |'"></span>
+                        <span th:text="'Телефон: ' + ${user.phoneNumber} + ' |'"></span>
+                        <span th:text="'Дата регистрации: ' + ${user.getFormattedRegistrationDate()} + ' |'"></span>
+                        <span th:if="${user.passport != null}"
+                              th:text="'Паспорт: ' + ${user.passport.serial_number()} + ' |'"></span>
+                        <span th:text="'Роли: ' + ${user.formattedRoles} + ' |'"></span>
+                        <span th:text="${user.active} == true ? 'Активный' : 'Неактивный'"></span>
+                    </div>
+                    <form id="update-form-${user.id}" action="/admin/users/update" method="post">
+                        <input type="hidden" name="currentPage" th:value="${currentPage}">
+                        <input type="hidden" name="id" th:value="${user.id}"/>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Имя</label>
+                                <input type="text" minlength="2" maxlength="100" name="name" placeholder="Новое имя"
+                                       th:attr="data-userid=${user.id}" th:value="${user.name}">
+                            </div>
+                            <div class="form-group">
+                                <label>Фамилия</label>
+                                <input type="text" minlength="2" maxlength="100" name="surname" placeholder="Новая фамилия"
+                                       th:attr="data-userid=${user.id}" th:value="${user.surname}">
+                            </div>
+                            <div class="form-group">
+                                <label>Отчество</label>
+                                <input type="text" maxlength="100" name="middleName" placeholder="Новое отчество"
+                                       th:attr="data-userid=${user.id}" th:value="${user.middleName}">
+                            </div>
+                        </div>
+                        <div class="form-grid form-grid-4">
+                            <div class="form-group">
+                                <label>Логин</label>
+                                <input type="text" minlength="5" maxlength="100" name="login" placeholder="Новый логин"
+                                       th:attr="data-userid=${user.id}" th:value="${user.login}">
+                            </div>
+                            <div class="form-group">
+                                <label>Пароль</label>
+                                <input type="password" minlength="6" maxlength="100" name="password" placeholder="Новый пароль"
+                                       th:attr="data-userid=${user.id}" th:value="${user.password}">
+                            </div>
+                            <div class="form-group">
+                                <label>Почта</label>
+                                <input type="email" maxlength="100" name="email" placeholder="Новая почта"
+                                       th:attr="data-userid=${user.id}" th:value="${user.email}">
+                            </div>
+                            <div class="form-group">
+                                <label>Телефон</label>
+                                <input type="tel" name="phoneNumber" placeholder="Новый номер телефона"
+                                       pattern="[8]{1}[0-9]{10}" maxlength="11"
+                                       th:attr="data-userid=${user.id}" th:value="${user.phoneNumber}">
+                            </div>
+                        </div>
+                        <div class="form-grid-roles">
+                            <div class="form-group">
+                                <label>Паспорт</label>
+                                <select name="passport" class="form-control" th:attr="data-userid=${user.id}">
+                                    <option th:value="${null}">Новый паспорт</option>
+                                    <option th:each="passport : ${passports}"
+                                            th:value="${passport.id}"
+                                            th:selected="${passport.id == user.passport?.id}"
+                                            th:text="${passport.serial_number() + ' (ID: ' + passport.id + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Роли</label>
+                                <div class="roles-checkbox-group">
+                                    <th:block th:each="role : ${roles}">
+                                        <label class="role-checkbox">
+                                            <input type="checkbox" th:id="${'update-role-' + user.id + '-' + role}"
+                                                   th:name="roles" th:value="${role}"
+                                                   th:checked="${user.roles != null and #lists.contains(user.roles, role)}">
+                                            <span th:text="${role}"></span>
+                                        </label>
+                                    </th:block>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="submit">Обновить</button>
+                            <button type="button" th:onclick="'confirmDelete(' + ${user.id} + ')'" class="btn-danger">Удалить</button>
+                        </div>
+                    </form>
+                    <form th:id="'delete-form-' + ${user.id}" action="/admin/users/delete" method="post" style="display: none;">
+                        <input type="hidden" name="id" th:value="${user.id}"/>
+                    </form>
+                </li>
+            </th:block>
+        </ol>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <!-- Назад -->
+            <a th:if="${currentPage > 0}"
+               th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/users/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage - 1) :
+                 '/admin/users?page=' + (currentPage - 1)}">← Назад</a>
+
+            <!-- Номера страниц -->
+            <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:if="${i != currentPage}" class="pages"
+                   th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                             '/admin/users/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + i :
+                             '/admin/users?page=' + i}"
+                   th:text="${i + 1}"></a>
+                <span class="currentPage" th:if="${i == currentPage}" th:text="${i + 1}"></span>
+            </span>
+
+            <!-- Вперед -->
+            <a th:if="${currentPage < totalPages - 1}"
+               th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/users/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage + 1) :
+                 '/admin/users?page=' + (currentPage + 1)}">Вперед →</a>
+        </div>
+    </section>
+</div>
+</body>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const errors = /*[[${validationErrors}]]*/ {};
+        if (errors && Object.keys(errors).length > 0) {
+            highlightAddErrorFields(errors);
+            showErrorNotification(errors);
+        }
+
+        const updateErrors = /*[[${updateValidationErrors}]]*/ {};
+        if (updateErrors && Object.keys(updateErrors).length > 0) {
+            highlightUpdateErrorFields(updateErrors);
+            showUpdateErrorNotification(updateErrors);
+        }
+    });
+
+    function highlightAddErrorFields(errors) {
+        document.querySelectorAll('.add-error-field').forEach(el => {
+            el.classList.remove('add-error-field');
+        });
+
+        for (const field in errors) {
+            const input = document.querySelector(`form[action='/admin/users/add'] [name="${field}"],
+                                              form[action='/admin/users/add'] [th\\:field="*{${field}}"]`);
+            if (input) {
+                input.classList.add('add-error-field');
+                if (Object.keys(errors).indexOf(field) === 0) {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    }
+
+    function highlightUpdateErrorFields(errors) {
+        document.querySelectorAll('.update-error-field').forEach(el => {
+            el.classList.remove('update-error-field');
+        });
+
+        for (const field in errors) {
+            const parts = field.split('_');
+            if (parts.length >= 3 && parts[0] === "update") {
+                const fieldName = parts[1];
+                const userId = parts[2];
+
+                let input = document.querySelector(`input[name="${fieldName}"][data-userid="${userId}"]`);
+                if (fieldName === "passport") input = document.querySelector(`select[name="passport"][data-userid="${userId}"]`);
+                if (input) {
+                    input.classList.add('update-error-field');
+                    if (Object.keys(errors).indexOf(field) === 0) {
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        }
+    }
+</script>
+</html>

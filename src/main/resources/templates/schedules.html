@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление расписанием</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="errorNotification" class="error-notification"
+     th:if="${validationErrors != null and not validationErrors.isEmpty()}">
+    <span class="close-btn" onclick="closeErrorNotification()">×</span>
+    <strong>Ошибки при добавлении:</strong>
+    <ul id="errorList" class="error-list">
+        <li th:each="error : ${validationErrors}" th:text="${error.value}"></li>
+    </ul>
+</div>
+<div id="updateErrorNotification" class="error-notification"
+     th:if="${updateValidationErrors != null and not updateValidationErrors.isEmpty()}">
+    <span class="close-btn" onclick="closeUpdateErrorNotification()">×</span>
+    <strong>Ошибки при обновлении:</strong>
+    <ul id="updateErrorList" class="error-list">
+        <li th:each="error : ${updateValidationErrors}" th:text="${error.value}"></li>
+    </ul>
+</div>
+
+<header>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="/admin" class="admin-btn">← Админ меню</a>
+        <h1>Управление расписанием</h1>
+        <div style="width: 100px;"></div>
+    </div>
+</header>
+
+<div class="container">
+    <section class="search-section">
+        <h2>Поиск расписаний</h2>
+        <form class="search-form" action="/admin/schedules/search" method="get">
+            <input type="text" maxlength="100" name="keyword" placeholder="Введите ключевое слово" th:value="${keyword}" required>
+            <select name="searchBy">
+                <option value="id" th:selected="${searchBy == 'id'}">ID</option>
+                <option value="departureDate" th:selected="${searchBy == 'departureDate'}">Дата отправления</option>
+            </select>
+            <button type="submit">Поиск</button>
+            <a href="/admin/schedules">
+                <button type="button">Сбросить поиск</button>
+            </a>
+        </form>
+    </section>
+
+    <section>
+        <h2>Добавить расписание</h2>
+        <form action="/admin/schedules/add" method="post" th:object="${schedule}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Поезд</label>
+                    <select th:field="*{train}" class="form-control">
+                        <option value="" disabled selected>Выберите поезд</option>
+                        <option th:each="train : ${trains}"
+                                th:value="${train.id}"
+                                th:text="${train.trainTitle + ' (ID: ' + train.id + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Маршрут</label>
+                    <select th:field="*{route}" class="form-control">
+                        <option value="" disabled selected>Выберите маршрут</option>
+                        <option th:each="route : ${routes}"
+                                th:value="${route.id}"
+                                th:text="${route.getRoute() + ' (ID: ' + route.id + ')'}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Дата отправления</label>
+                    <input type="date" class="dateForm" th:field="*{departureDate}" required>
+                </div>
+                <div class="form-group">
+                    <label>Время отправления</label>
+                    <input type="time" th:field="*{departureTime}" required>
+                </div>
+                <div class="form-group">
+                    <label>Время прибытия</label>
+                    <input type="time" th:field="*{arrivalTime}" required>
+                </div>
+            </div>
+            <button type="submit">Добавить расписание</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Список расписаний</h2>
+        <ol>
+            <th:block th:each="schedule : ${schedules}">
+                <li>
+                    <div class="user-info">
+                        <span th:text="'ID: ' + ${schedule.id} + ' |'"></span>
+                        <span th:text="'Поезд: ' + ${schedule.train.trainTitle} + ' |'"></span>
+                        <span th:text="'Маршрут: ' + ${schedule.route.getRoute()} + ' |'"></span>
+                        <span th:text="'Дата: ' + ${schedule.departureDate} + ' |'"></span>
+                        <span th:text="'Отправление: ' + ${schedule.departureTime} + ' |'"></span>
+                        <span th:text="'Прибытие: ' + ${schedule.arrivalTime}"></span>
+                    </div>
+                    <form id="update-form-${schedule.id}" action="/admin/schedules/update" method="post">
+                        <input type="hidden" name="currentPage" th:value="${currentPage}">
+                        <input type="hidden" name="id" th:value="${schedule.id}"/>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Поезд</label>
+                                <select name="train.id" class="form-control">
+                                    <option value="" disabled selected>Новый поезд</option>
+                                    <option th:each="train : ${trains}"
+                                            th:value="${train.id}"
+                                            th:selected="${train.id == schedule.route.id}"
+                                            th:text="${train.trainTitle + ' (ID: ' + train.id + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Маршрут</label>
+                                <select name="route.id" class="form-control">
+                                    <option value="" disabled selected>Новый маршрут</option>
+                                    <option th:each="route : ${routes}"
+                                            th:value="${route.id}"
+                                            th:selected="${route.id == schedule.route.id}"
+                                            th:text="${route.getRoute() + ' (ID: ' + route.id + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Дата отправления</label>
+                                <input type="date" class="dateForm" name="departureDate"
+                                       th:attr="data-scheduleid=${schedule.id}" th:value="${schedule.departureDate}">
+                            </div>
+                            <div class="form-group">
+                                <label>Время отправления</label>
+                                <input type="time" name="departureTime"
+                                       th:attr="data-scheduleid=${schedule.id}" th:value="${schedule.departureTime}">
+                            </div>
+                            <div class="form-group">
+                                <label>Время прибытия</label>
+                                <input type="time" name="arrivalTime"
+                                       th:attr="data-scheduleid=${schedule.id}" th:value="${schedule.arrivalTime}">
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="submit">Обновить</button>
+                            <button type="button" th:onclick="'confirmDelete(' + ${schedule.id} + ')'" class="btn-danger">Удалить</button>
+                        </div>
+                    </form>
+                    <form th:id="'delete-form-' + ${schedule.id}" action="/admin/schedules/delete" method="post" style="display: none;">
+                        <input type="hidden" name="id" th:value="${schedule.id}"/>
+                    </form>
+                </li>
+            </th:block>
+        </ol>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <!-- Назад -->
+            <a th:if="${currentPage > 0}"
+               th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/schedules/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage - 1) :
+                 '/admin/schedules?page=' + (currentPage - 1)}">← Назад</a>
+
+            <!-- Номера страниц -->
+            <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:if="${i != currentPage}" class="pages"
+                   th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                             '/admin/schedules/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + i :
+                             '/admin/schedules?page=' + i}"
+                   th:text="${i + 1}"></a>
+                <span class="currentPage" th:if="${i == currentPage}" th:text="${i + 1}"></span>
+            </span>
+
+            <!-- Вперед -->
+            <a th:if="${currentPage < totalPages - 1}"
+               th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/schedules/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage + 1) :
+                 '/admin/schedules?page=' + (currentPage + 1)}">Вперед →</a>
+        </div>
+    </section>
+</div>
+</body>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const errors = /*[[${validationErrors}]]*/ {};
+        if (errors && Object.keys(errors).length > 0) {
+            highlightAddErrorFields(errors);
+            showErrorNotification(errors);
+        }
+
+        const updateErrors = /*[[${updateValidationErrors}]]*/ {};
+        if (updateErrors && Object.keys(updateErrors).length > 0) {
+            highlightUpdateErrorFields(updateErrors);
+            showUpdateErrorNotification(updateErrors);
+        }
+    });
+
+    const elements = document.getElementsByClassName('dateForm');
+    for (let el of elements) {
+        el.min = new Date().toISOString().split('T')[0];
+        el.max = new Date("2050-12-31T23:59:59").toISOString().split('T')[0];
+    }
+
+    function highlightAddErrorFields(errors) {
+        document.querySelectorAll('.add-error-field').forEach(el => {
+            el.classList.remove('add-error-field');
+        });
+
+        for (const field in errors) {
+            const input = document.querySelector(`form[action='/admin/schedules/add'] [name="${field}"],
+                                              form[action='/admin/schedules/add'] [th\\:field="*{${field}}"]`);
+            if (input) {
+                input.classList.add('add-error-field');
+                if (Object.keys(errors).indexOf(field) === 0) {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+    }
+
+    function highlightUpdateErrorFields(errors) {
+        document.querySelectorAll('.update-error-field').forEach(el => {
+            el.classList.remove('update-error-field');
+        });
+
+        for (const field in errors) {
+            const parts = field.split('_');
+            if (parts.length >= 3 && parts[0] === "update") {
+                const fieldName = parts[1];
+                const scheduleId = parts[2];
+
+                const input = document.querySelector(`input[name="${fieldName}"][data-scheduleid="${scheduleId}"],
+                                                  textarea[name="${fieldName}"][data-scheduleid="${scheduleId}"]`);
+                if (input) {
+                    input.classList.add('update-error-field');
+                    if (Object.keys(errors).indexOf(field) === 0) {
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        }
+    }
+</script>
+</html>

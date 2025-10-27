@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Управление отзывами</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="errorNotification" class="error-notification"
+     th:if="${validationErrors != null and not validationErrors.isEmpty()}">
+  <span class="close-btn" onclick="closeErrorNotification()">×</span>
+  <strong>Ошибки при добавлении:</strong>
+  <ul id="errorList" class="error-list">
+    <li th:each="error : ${validationErrors}" th:text="${error.value}"></li>
+  </ul>
+</div>
+<div id="updateErrorNotification" class="error-notification"
+     th:if="${updateValidationErrors != null and not updateValidationErrors.isEmpty()}">
+  <span class="close-btn" onclick="closeUpdateErrorNotification()">×</span>
+  <strong>Ошибки при обновлении:</strong>
+  <ul id="updateErrorList" class="error-list">
+    <li th:each="error : ${updateValidationErrors}" th:text="${error.value}"></li>
+  </ul>
+</div>
+
+<header>
+  <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="/admin" class="admin-btn">← Админ меню</a>
+    <h1>Управление отзывами</h1>
+    <div style="width: 100px;"></div>
+  </div>
+</header>
+
+<div class="container">
+  <section class="search-section">
+    <h2>Поиск отзывов</h2>
+    <form class="search-form" action="/admin/reviews/search" method="get">
+      <input type="text" maxlength="100" name="keyword" placeholder="Введите ключевое слово" th:value="${keyword}" required>
+      <select name="searchBy">
+        <option value="id" th:selected="${searchBy == 'id'}">ID</option>
+        <option value="rating" th:selected="${searchBy == 'rating'}">Рейтинг</option>
+      </select>
+      <button type="submit">Поиск</button>
+      <a href="/admin/reviews">
+        <button type="button">Сбросить поиск</button>
+      </a>
+    </form>
+  </section>
+
+  <section>
+    <h2>Добавить отзыв</h2>
+    <form action="/admin/reviews/add" method="post" th:object="${review}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Пользователь</label>
+          <select th:field="*{user}" class="form-control">
+            <option value="" disabled selected>Выберите пользователя</option>
+            <option th:each="user : ${users}"
+                    th:value="${user.id}"
+                    th:text="${user.login + ' (ID: ' + user.id + ')'}"></option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Поезд</label>
+          <select th:field="*{train}" class="form-control">
+            <option value="" disabled selected>Выберите поезд</option>
+            <option th:each="train : ${trains}"
+                    th:value="${train.id}"
+                    th:text="${train.trainTitle + ' (ID: ' + train.id + ')'}"></option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Рейтинг (1-10)</label>
+          <input type="number" min="1" max="10" th:field="*{rating}" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Комментарий</label>
+        <textarea maxlength="1000" th:field="*{comment}"></textarea>
+      </div>
+      <button type="submit">Добавить отзыв</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Список отзывов</h2>
+    <ol>
+      <th:block th:each="review : ${reviews}">
+        <li>
+          <div class="user-info">
+            <span th:text="'ID: ' + ${review.id} + ' |'"></span>
+            <span th:text="'Пользователь: ' + ${review.user.login} + ' |'"></span>
+            <span th:text="'Поезд: ' + ${review.train.trainTitle} + ' |'"></span>
+            <span th:text="'Рейтинг: ' + ${review.rating} + ' |'"></span>
+            <span th:text="'Дата: ' + ${review.reviewDate}"></span>
+          </div>
+          <div class="user-info" th:if="${review.comment != null and !review.comment.isEmpty()}">
+            <span th:text="'Комментарий: ' + ${review.comment}"></span>
+          </div>
+          <form id="update-form-${review.id}" action="/admin/reviews/update" method="post">
+            <input type="hidden" name="currentPage" th:value="${currentPage}">
+            <input type="hidden" name="id" th:value="${review.id}"/>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Пользователь</label>
+                <select name="user.id" class="form-control">
+                  <option value="" disabled selected>Новый пользователь</option>
+                  <option th:each="user : ${users}"
+                          th:value="${user.id}"
+                          th:selected="${user.id == review.user.id}"
+                          th:text="${user.login + ' (ID: ' + user.id + ')'}"></option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Поезд</label>
+                <select name="train.id" class="form-control">
+                  <option value="" disabled selected>Новый поезд</option>
+                  <option th:each="train : ${trains}"
+                          th:value="${train.id}"
+                          th:selected="${train.id == review.train.id}"
+                          th:text="${train.trainTitle + ' (ID: ' + train.id + ')'}"></option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Рейтинг (1-10)</label>
+                <input type="number" min="1" max="10" name="rating" placeholder="Новый рейтинг"
+                       th:attr="data-reviewid=${review.id}" th:value="${review.rating}">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea maxlength="1000" name="comment" placeholder="Новый комментарий"
+                        th:attr="data-reviewid=${review.id}" th:text="${review.comment}"></textarea>
+            </div>
+            <div class="action-buttons">
+              <button type="submit">Обновить</button>
+              <button type="button" th:onclick="'confirmDelete(' + ${review.id} + ')'" class="btn-danger">Удалить</button>
+            </div>
+          </form>
+          <form th:id="'delete-form-' + ${review.id}" action="/admin/reviews/delete" method="post" style="display: none;">
+            <input type="hidden" name="id" th:value="${review.id}"/>
+          </form>
+        </li>
+      </th:block>
+    </ol>
+
+    <div class="pagination" th:if="${totalPages > 1}">
+      <!-- Назад -->
+      <a th:if="${currentPage > 0}"
+         th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/reviews/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage - 1) :
+                 '/admin/reviews?page=' + (currentPage - 1)}">← Назад</a>
+
+      <!-- Номера страниц -->
+      <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <a th:if="${i != currentPage}" class="pages"
+                   th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                             '/admin/reviews/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + i :
+                             '/admin/reviews?page=' + i}"
+                   th:text="${i + 1}"></a>
+                <span class="currentPage" th:if="${i == currentPage}" th:text="${i + 1}"></span>
+            </span>
+
+      <!-- Вперед -->
+      <a th:if="${currentPage < totalPages - 1}"
+         th:href="${(keyword != null and !#strings.isEmpty(keyword)) ?
+                 '/admin/reviews/search?keyword=' + keyword + '&searchBy=' + searchBy + '&page=' + (currentPage + 1) :
+                 '/admin/reviews?page=' + (currentPage + 1)}">Вперед →</a>
+    </div>
+  </section>
+</div>
+</body>
+<script th:inline="javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    const errors = /*[[${validationErrors}]]*/ {};
+    if (errors && Object.keys(errors).length > 0) {
+      highlightAddErrorFields(errors);
+      showErrorNotification(errors);
+    }
+
+    const updateErrors = /*[[${updateValidationErrors}]]*/ {};
+    if (updateErrors && Object.keys(updateErrors).length > 0) {
+      highlightUpdateErrorFields(updateErrors);
+      showUpdateErrorNotification(updateErrors);
+    }
+  });
+
+  function highlightAddErrorFields(errors) {
+    document.querySelectorAll('.add-error-field').forEach(el => {
+      el.classList.remove('add-error-field');
+    });
+
+    for (const field in errors) {
+      const input = document.querySelector(`form[action='/admin/reviews/add'] [name="${field}"],
+                                              form[action='/admin/reviews/add'] [th\\:field="*{${field}}"]`);
+      if (input) {
+        input.classList.add('add-error-field');
+        if (Object.keys(errors).indexOf(field) === 0) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }
+
+  function highlightUpdateErrorFields(errors) {
+    document.querySelectorAll('.update-error-field').forEach(el => {
+      el.classList.remove('update-error-field');
+    });
+
+    for (const field in errors) {
+      const parts = field.split('_');
+      if (parts.length >= 3 && parts[0] === "update") {
+        const fieldName = parts[1];
+        const reviewId = parts[2];
+
+        const input = document.querySelector(`input[name="${fieldName}"][data-reviewid="${reviewId}"],
+                                                  textarea[name="${fieldName}"][data-reviewid="${reviewId}"]`);
+        if (input) {
+          input.classList.add('update-error-field');
+          if (Object.keys(errors).indexOf(field) === 0) {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
+    }
+  }
+</script>
+</html>
