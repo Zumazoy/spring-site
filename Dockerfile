@@ -1,5 +1,8 @@
 FROM maven:3-openjdk-23 AS builder
 
+RUN app-get update && \
+    app-get install -y maven
+
 WORKDIR /app
 
 COPY pom.xml .
