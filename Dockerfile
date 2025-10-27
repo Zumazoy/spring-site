@@ -1,4 +1,4 @@
-FROM openjdk:23-jdk-jammy AS builder
+FROM eclipse-temurin:23-jdk-jammy AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ COPY src /app/src
 
 RUN mvn clean package -DskipTests
 
-FROM openjdk:23-jre-jammy
+FROM eclipse-temurin:23-jre-jammy
 
 EXPOSE 2025
 
