@@ -1,4 +1,4 @@
-FROM eclipse-temurin:23-jdk-slim AS builder
+FROM eclipse-temurin:21-jdk-slim AS builder
 
 RUN apt-get update && \
     apt-get install -y maven && \
@@ -11,7 +11,7 @@ COPY src /app/src
 
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:23-jre-slim
+FROM eclipse-temurin:21-jre-slim
 
 ENV PORT=2025
 EXPOSE $PORT
